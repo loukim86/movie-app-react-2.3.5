@@ -19,11 +19,18 @@
   overflow-y: auto;
 }
 
-.spinner {
-  align-self: center;
-  margin-top: 60px;
-}
-
 .no-data {
   text-align: center;
+}
+
+.loading-spin {
+    align-self: center;
+    margin-top: 50px;
+}
+
+.no-internet-warning {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%)
 }

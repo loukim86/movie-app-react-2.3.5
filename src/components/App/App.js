@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import { Layout, Spin } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Layout, Spin, Alert } from 'antd';
 
 import MovieService from '../../services/MovieService';
 import MovieCard from '../MovieCard/MovieCard';
@@ -8,71 +8,88 @@ import './App.css';
 
 const { Content } = Layout;
 
-export default class App extends Component {
-  state = {
-    movies: [],
-    loading: true,
-    error: null,
-  };
+const App = () => {
+  const [onlineStatus, setOnlineStatus] = useState(navigator.onLine);
 
-  componentDidMount() {
-    this.showAllMovies();
-  }
+  useEffect(() => {
+    const handleOnlineStatusChange = () => {
+      setOnlineStatus(navigator.onLine);
+    };
 
-  cutOffDescription = (text) => {
+    window.addEventListener('online', handleOnlineStatusChange);
+    window.addEventListener('offline', handleOnlineStatusChange);
+
+    return () => {
+      window.removeEventListener('online', handleOnlineStatusChange);
+      window.removeEventListener('offline', handleOnlineStatusChange);
+    };
+  }, []);
+
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const showAllMovies = async (pageNumber) => {
+      const movieService = new MovieService();
+      try {
+        const results = await movieService.getAllMovies(pageNumber);
+
+        const updatedMovies = results.map((movie) => ({
+          id: movie.id,
+          title: movie.title,
+          poster: movie.poster_path,
+          overview: cutOffDescription(movie.overview),
+          releaseDate: movie.release_date,
+        }));
+
+        setMovies(updatedMovies);
+        setLoading(false);
+        setError(null);
+      } catch (error) {
+        setError(error);
+        setLoading(false);
+      }
+    };
+
+    showAllMovies();
+  }, []);
+
+  const cutOffDescription = (text) => {
     text = text.trim();
     let words = text.split(' ');
     return words.length > 30 ? words.slice(0, 30).join(' ') + '...' : text;
   };
-
-  showAllMovies = (pageNumber) => {
-    const movieService = new MovieService();
-    movieService.getAllMovies(pageNumber).then((results) => {
-      if (results instanceof Error) {
-        this.setState({
-          error: results,
-          loading: false,
-        });
-      } else {
-        const movies = results.map((movie) => ({
-          id: movie.id,
-          title: movie.title,
-          poster: movie.poster_path,
-          overview: this.cutOffDescription(movie.overview),
-          releaseDate: movie.release_date,
-        }));
-        const totalMovies = results.length;
-        this.setState({
-          movies,
-          loading: false,
-          error: null,
-          totalMovies,
-        });
-      }
-    });
-  };
-
-  render() {
-    const { loading, movies, error } = this.state;
-
-    return (
-      <Layout className="layout">
+  return (
+    <Layout className="layout">
+      <Content className="content-all-movies movie-card-panel">
         {loading ? (
-          <Content className="spinner">
-            <Spin tip="Loading" size="large">
-              <div className="spinner-content" />
-            </Spin>
-          </Content>
+          <Spin size="large" tip="Loading" className="loading-spin">
+            <div className="spin-content" />
+          </Spin>
         ) : (
-          <Content className="content-all-movies movie-card-panel">
-            {error ? null : movies.length === 0 ? (
+          <>
+            {error ? (
+              <Alert message="Error" description="Error loading data" type="error" showIcon />
+            ) : !onlineStatus ? (
+              <div className="no-internet-warning">
+                <Alert
+                  message="No Internet Connection"
+                  description="Please check your internet connection and try again."
+                  type="warning"
+                  showIcon
+                />
+              </div>
+            ) : movies.length === 0 ? (
               <h1 className="no-data">No Data Found</h1>
             ) : (
               movies.map((movie) => <MovieCard key={movie.id} movie={movie} />)
             )}
-          </Content>
+          </>
         )}
-      </Layout>
-    );
-  }
-}
+      </Content>
+    </Layout>
+  );
+};
+
+export default App;
