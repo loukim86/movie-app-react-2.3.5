@@ -1,30 +1,29 @@
 .layout {
-    background-color: white;
-    max-width: 70vw;
+  background-color: white;
+  max-width: 70vw;
 }
 
 .content-all-movies {
-    height: 100%;
-    background-color: white;
-    display: grid;
-    grid-template-rows: 10% 85% 5%;
-    grid-template-columns: auto;
+  height: 100%;
+  background-color: white;
+  display: grid;
+  grid-template-rows: 10% 85% 5%;
+  grid-template-columns: auto;
 }
 
 .movie-card-panel {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr 1fr;
-    align-content: space-between;
-    overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  align-content: space-between;
+  overflow-y: auto;
 }
 
 .spinner {
-    align-self: center;
-    margin-top: 60px;
+  align-self: center;
+  margin-top: 60px;
 }
 
 .no-data {
-    text-align: center
+  text-align: center;
 }
-
