@@ -2,6 +2,7 @@ import SomeError from './SomeError';
 
 export default class MovieService {
   _moviePopularUrl = 'https://api.themoviedb.org/3';
+  _movieGenresUrl = 'https://api.themoviedb.org/3/genre/movie/list?language=en';
 
   _options = {
     method: 'GET',
@@ -12,18 +13,35 @@ export default class MovieService {
     },
     withCredentials: true,
   };
-  _apiKey = '41e75f40f80eee6c9bd1d10f253ce56b';
 
-  async getAllMovies(pageNumber = 1) {
+  async getAllMovies(pageNumber = 1, search = '') {
     try {
-      const movieUrl = `${this._moviePopularUrl}/movie/popular?language=en-US&page=${pageNumber}`;
-      const res = await fetch(movieUrl, this._options);
-      if (!res.ok) {
-        throw new SomeError('Ошибка ' + res.status);
+      let movieUrl = this._moviePopularUrl;
+      if (search !== '') {
+        movieUrl += `search/movie?query=${search}&language=en-US&page=`;
       }
-      const response = await res.json();
+      if (search === '') {
+        movieUrl += 'movie/popular?language=en-US&page=';
+      }
+      const res = await fetch(movieUrl + pageNumber, this._options);
+      if (!res.ok) {
+        throw new SomeError('Error number is ' + res.status);
+      }
+      const resJson = await res.json();
+      return resJson;
+    } catch (error) {
+      return error;
+    }
+  }
 
-      return response.results;
+  async getMoviesGenres() {
+    try {
+      const res = await fetch(this._movieGenresUrl, this._options);
+      if (!res.ok) {
+        throw new SomeError('Error number is ' + res.status);
+      }
+      const resJson = await res.json();
+      return resJson.genres;
     } catch (error) {
       return error;
     }

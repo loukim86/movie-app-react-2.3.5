@@ -1,95 +1,174 @@
-import React, { useState, useEffect } from 'react';
-import { Layout, Spin, Alert } from 'antd';
+import React, { Component } from 'react';
+import { Layout, Spin, Alert, Space } from 'antd';
 
 import MovieService from '../../services/MovieService';
 import MovieCard from '../MovieCard/MovieCard';
-
+import SearchPanel from '../SearchPanel/SearchPanel';
+import MoviePagination from '../MoviePagination/MoviePagination';
+import NetworkError from '../NetworkError/NetworkError';
 import './App.css';
 
-const { Content } = Layout;
+const { Header, Content, Footer } = Layout;
 
-const App = () => {
-  const [onlineStatus, setOnlineStatus] = useState(navigator.onLine);
+export default class App extends Component {
+  state = {
+    movies: [],
+    genres: [],
+    loading: true,
+    error: null,
+    totalMovies: 0,
+    page: 1,
+    search: '',
+  };
 
-  useEffect(() => {
-    const handleOnlineStatusChange = () => {
-      setOnlineStatus(navigator.onLine);
-    };
+  componentDidMount() {
+    this.fetchAllMovies();
+    this.fetchGenres();
+  }
 
-    window.addEventListener('online', handleOnlineStatusChange);
-    window.addEventListener('offline', handleOnlineStatusChange);
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.page !== this.state.page || prevState.search !== this.state.search) {
+      this.fetchAllMovies(this.state.page, this.state.search);
+    }
+  }
 
-    return () => {
-      window.removeEventListener('online', handleOnlineStatusChange);
-      window.removeEventListener('offline', handleOnlineStatusChange);
-    };
-  }, []);
-
-  const [movies, setMovies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const showAllMovies = async (pageNumber) => {
-      const movieService = new MovieService();
-      try {
-        const results = await movieService.getAllMovies(pageNumber);
-
-        const updatedMovies = results.map((movie) => ({
-          id: movie.id,
-          title: movie.title,
-          poster: movie.poster_path,
-          overview: cutOffDescription(movie.overview),
-          releaseDate: movie.release_date,
-        }));
-
-        setMovies(updatedMovies);
-        setLoading(false);
-        setError(null);
-      } catch (error) {
-        setError(error);
-        setLoading(false);
-      }
-    };
-
-    showAllMovies();
-  }, []);
-
-  const cutOffDescription = (text) => {
+  cutOffDescription(text) {
     text = text.trim();
     let words = text.split(' ');
     return words.length > 30 ? words.slice(0, 30).join(' ') + '...' : text;
-  };
-  return (
-    <Layout className="layout">
-      <Content className="content-all-movies movie-card-panel">
-        {loading ? (
-          <Spin size="large" tip="Loading" className="loading-spin">
-            <div className="spin-content" />
-          </Spin>
-        ) : (
-          <>
-            {error ? (
-              <Alert message="Error" description="Error loading data" type="error" showIcon />
-            ) : !onlineStatus ? (
-              <div className="no-internet-warning">
-                <Alert
-                  message="No Internet Connection"
-                  description="Please check your internet connection and try again."
-                  type="warning"
-                  showIcon
-                />
-              </div>
-            ) : movies.length === 0 ? (
-              <h1 className="no-data">No Data Found</h1>
-            ) : (
-              movies.map((movie) => <MovieCard key={movie.id} movie={movie} />)
-            )}
-          </>
-        )}
-      </Content>
-    </Layout>
-  );
-};
+  }
 
-export default App;
+  data = new MovieService();
+
+  fetchAllMovies(pageNumber, search) {
+    this.data
+      .getAllMovies(pageNumber, search)
+      .then((results) => {
+        if (results instanceof Error) throw new Error(results.message);
+
+        const movies = results.map((movie) => ({
+          id: movie.id,
+          gendreIds: [...movie.genre_ids],
+          title: movie.title,
+          poster: movie.poster_path,
+          overview: this.cutOffDescription(movie.overview),
+          releaseDate: movie.release_date,
+        }));
+
+        const totalMovies = results.total_results;
+
+        this.setState({
+          movies: movies,
+          loading: false,
+          error: null,
+          totalMovies,
+        });
+      })
+      .catch((error) => {
+        this.setState({
+          error: error,
+          loading: false,
+          totalMovies: 0,
+        });
+      });
+  }
+
+  fetchGenres() {
+    this.data
+      .getMoviesGenres()
+      .then((results) => {
+        if (results instanceof Error) throw new Error(results);
+
+        const genres = results.map((genre) => ({
+          id: genre.id,
+          name: genre.name,
+        }));
+
+        this.setState({
+          genres: genres,
+          error: null,
+        });
+      })
+      .catch((error) => {
+        this.setState({
+          error: error,
+        });
+      });
+  }
+
+  changeCurrentPage = (page) => {
+    this.setState({
+      page: page,
+      loading: true,
+    });
+  };
+
+  changeSearch = (search) => {
+    this.setState({
+      search,
+      loading: true,
+    });
+  };
+
+  render() {
+    const loading = this.state.loading ? (
+      <Content className="spinner">
+        <Spin tip="Loading" size="large">
+          <div className="spin-content" />
+        </Spin>
+      </Content>
+    ) : null;
+
+    const movies = !this.state.loading ? <MovieDisplay movies={this.state.movies} genres={this.state.genres} /> : null;
+
+    const error =
+      this.state.error !== null ? (
+        <Space align="center">
+          <Alert message={this.state.error.message} type="error" closable />
+        </Space>
+      ) : null;
+
+    return (
+      <Layout className="layout">
+        <NetworkError>
+          <Content className="content-all-movies">
+            <Header className="header">
+              <SearchPanel changeSearch={this.changeSearch} />
+              {error}
+            </Header>
+            {loading}
+            {movies}
+            <Footer className="footer">
+              <MoviePagination
+                defaultCurrent={1}
+                totalMovies={this.state.totalMovies}
+                changePage={this.changeCurrentPage}
+              />
+            </Footer>
+          </Content>
+        </NetworkError>
+      </Layout>
+    );
+  }
+}
+
+const MovieDisplay = ({ movies, genres }) => {
+  if (movies.length === 0) {
+    return (
+      <Content>
+        <h1 className="data-absent">No Data Found</h1>
+      </Content>
+    );
+  } else {
+    const movieCardData = movies.map((el) => {
+      const movieGenreType = el.genreIds
+        .map((genreId) => genres.find((genre) => genre.id === genreId))
+        .filter((genre) => genre && genre.name)
+        .map((genre) => genre.name);
+
+      return <MovieCard key={el.id} movieGenres={movieGenreType} movie={el} />;
+    });
+
+    return <Content className="movie-card-panel">{movieCardData}</Content>;
+  }
+};
