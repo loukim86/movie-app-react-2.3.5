@@ -10,6 +10,6 @@ export default class SearchPanel extends Component {
   };
   debounceSearch = debounce(this.searchOnChange, 300);
   render() {
-    return <Input placeholder="Type For Search Movie" onChange={this.debounceSearch} />;
+    return <Input placeholder="Type To Search For Movie" onChange={this.debounceSearch} className="search-panel" />;
   }
 }

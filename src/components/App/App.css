@@ -1,3 +1,6 @@
+.ant-tabs-tabpane {
+  height: 100vh;
+}
 .layout {
   background-color: #fff;
   max-width: 70vw;
@@ -17,45 +20,36 @@
 }
 
 .footer {
-  text-align: center
+  text-align: center;
 }
 
-.movie-card-panel {
+.rated {
+  height: 100%;
+  background-color: #fff;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr;
-  align-content: space-between;
-  overflow-y: auto;
+  grid-template-columns: auto;
+  grid-template-rows: 95% 5%;
 }
 
 .spinner {
   align-self: center;
 }
 
-.data-absent {
-  text-align: center
-}
 
 @media (max-width: 1045px) {
   .layout {
-      max-width: 90vw;
+    max-width: 90vw;
   }
 }
 
 @media (max-width: 900px) {
   .layout {
-      max-width: 100vw;
-      display: flex;
-  }
-
-  .movie-card-panel {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    max-width: 100vw;
+    display: flex;
   }
 
   .spinner {
-      align-self: auto;
-      padding-top: 40vh;
+    align-self: auto;
+    padding-top: 40vh;
   }
 }

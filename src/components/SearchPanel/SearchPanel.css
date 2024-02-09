@@ -1,0 +1,5 @@
+@media (max-width: 900px) {
+    .search-panel {
+        max-width: 400px;
+    }
+}
